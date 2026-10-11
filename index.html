@@ -134,6 +134,10 @@ function renderHome(){
       难度 <select id="f-diff"><option value="">全部</option><option>易</option><option>中</option><option>难</option></select>
       题量 <select id="f-count"><option value="20">20题</option><option value="50">50题</option><option value="100" selected>100题(每日节奏)</option><option value="">全部</option></select>
     </div>
+    <div style="margin-top:8px">
+      <label style="cursor:pointer"><input type="checkbox" id="f-new" checked> 只练没做过的题（练过的自动跳过）</label>
+      <span class="mini" id="f-hint" style="margin-left:10px"></span>
+    </div>
     <div style="margin-top:10px">
       <button class="btn" id="m-seq">顺序练习</button>
       <button class="btn ghost" id="m-rand">随机练习</button>
@@ -169,7 +173,16 @@ function renderHome(){
     type: document.getElementById("f-type").value,
     diff: document.getElementById("f-diff").value,
     count: document.getElementById("f-count").value,
+    onlyNew: document.getElementById("f-new").checked,
   });
+  const updateHint = ()=>{
+    const f = {domain:document.getElementById("f-domain").value, type:document.getElementById("f-type").value, diff:document.getElementById("f-diff").value};
+    const inScope = QUESTIONS.filter(q=> (!f.domain||q.domain===f.domain) && (!f.type||q.type===f.type) && (!f.diff||q.difficulty===f.diff));
+    const unseen = inScope.filter(q=>!(stats[q.id]&&stats[q.id].n>0)).length;
+    document.getElementById("f-hint").textContent = `当前范围共${inScope.length}题，未练${unseen}题`;
+  };
+  ["f-domain","f-type","f-diff","f-new"].forEach(id=> document.getElementById(id).addEventListener("change", updateHint));
+  updateHint();
   document.getElementById("m-seq").onclick = ()=> startPractice("seq", pick());
   document.getElementById("m-rand").onclick = ()=> startPractice("rand", pick());
   document.getElementById("m-wrong").onclick = ()=> startPractice("wrong", {});
@@ -187,6 +200,7 @@ function renderHome(){
 /* ---------- 练习 ---------- */
 function filterList(f){
   let list = QUESTIONS.filter(q=> (!f.domain||q.domain===f.domain) && (!f.type||q.type===f.type) && (!f.diff||q.difficulty===f.diff) );
+  if(f.onlyNew) list = list.filter(q=>!(stats[q.id]&&stats[q.id].n>0));
   if(f.mode==="rand") list = shuffle(list);
   if(f.count) list = list.slice(0, +f.count);
   return list;
@@ -200,7 +214,7 @@ function startPractice(mode, f){
   else if(mode==="fav"){ list = QUESTIONS.filter(q=>fav[q.id]); title="⭐ 收藏练习"; }
   else if(mode==="spot"){ list = QUESTIONS.filter(q=>q.spot); title="重点抽查(验收20题)"; }
   else { list = filterList(f); title = (mode==="rand"?"随机":"顺序")+"练习"; }
-  if(!list.length){ alert("没有符合条件的题目，请调整筛选。"); return; }
+  if(!list.length){ alert(f.onlyNew ? "该范围内没有未练过的题了，全部练完！可取消勾选\"只练没做过的题\"进行复习，或换个筛选范围。" : "没有符合条件的题目，请调整筛选。"); return; }
   S = {kind:"practice", mode, title, list, idx:0, answers:{}, startTs:Date.now(), exitFn:renderHome, f};
   renderQuestion();
 }
@@ -352,7 +366,7 @@ function finishPractice(){
   </div>`;
   const aw=document.getElementById("again-wrong");
   if(aw) aw.onclick=()=>{ S.list = shuffle(done.filter(x=>!S.answers[x.id].isRight).map(x=>x)); S.idx=0; S.answers={}; S.startTs=Date.now(); renderQuestion(); };
-  document.getElementById("again").onclick=()=>{ startPractice(S.mode, S.f||{}); };
+  document.getElementById("again").onclick=()=>{ S.list = shuffle(S.list); S.idx=0; S.answers={}; S.startTs=Date.now(); renderQuestion(); };
 }
 
 /* ---------- 模拟考试 ---------- */

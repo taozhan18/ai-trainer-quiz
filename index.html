@@ -32,7 +32,7 @@ h2{font-size:16px;margin:0 0 12px;color:var(--blue)}
 .favbtn:hover{filter:brightness(.96)}
 .favbtn.on{background:#fff3cd;color:#b45309}
 .qtext{font-size:17px;line-height:1.65;margin:6px 0 14px;white-space:pre-wrap}
-.opt{display:block;width:100%;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:11px 14px;margin:8px 0;font-size:15px;line-height:1.5;cursor:pointer;transition:all .12s}
+.opt{display:block;width:100%;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:11px 14px;margin:8px 0;font-size:15px;line-height:1.5;cursor:pointer;transition:all .12s;touch-action:manipulation}
 .opt:hover:not(:disabled){border-color:var(--blue2);background:#f6f9ff}
 .opt .letter{display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;background:#e8eef9;color:#33508f;font-size:13px;font-weight:700;margin-right:8px;flex:none}
 .opt{display:flex;align-items:flex-start}
@@ -212,8 +212,8 @@ function optionButtons(q, state){
   return judge.map(L=>{
     let cls="opt", dis="";
     const chosen = state.chosen.has(L);
-    if(chosen) cls += state.examMode? " selected" : (state.judged? (state.correctSet.has(L)?"correct":"wrong") : "selected");
-    if(state.judged && !chosen && state.correctSet.has(L)) cls+=" correct";
+    if(chosen) cls += state.examMode? " selected" : (state.judged? (state.correctSet.has(L)?" correct":" wrong") : " selected");
+    if(!chosen && state.judged && state.correctSet.has(L)) cls+=" correct";
     if(state.locked) dis="disabled";
     const label = q.type==="判断" ? `<span class="letter">${L==="A"?"✓":"✗"}</span>${esc(q.options[L])}` : `<span class="letter">${L}</span><span>${esc(q.options[L])}</span>`;
     return `<button class="${cls}" ${dis} data-letter="${L}">${label}</button>`;
@@ -313,6 +313,8 @@ function judgeCurrent(){
   }
   saveAll();
   renderQuestion();
+  const fbEl = document.getElementById("feedback");
+  if(fbEl && window.innerHeight < 900) setTimeout(()=>fbEl.scrollIntoView({behavior:"smooth", block:"nearest"}), 60);
 }
 function showFeedback(q, rec){
   const fb = document.getElementById("feedback");
